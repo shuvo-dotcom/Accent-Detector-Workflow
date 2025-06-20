@@ -19,7 +19,7 @@ How It Works
 4. Simultaneously, Whisper transcribes the audio and displays the transcript.
 
 Hosted
-![Alt Text](https://accent-detector-workflow.streamlit.app/)
+https://accent-detector-workflow.streamlit.app/
 
 Examples
 ![Alt Text](https://github.com/shuvo-dotcom/Accent-Detector-Workflow/blob/main/Screenshot%202025-06-20%20at%209.45.11%E2%80%AFPM.png)
