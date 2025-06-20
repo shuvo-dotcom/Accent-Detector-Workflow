@@ -10,3 +10,4 @@ matplotlib
 torchvision
 soundfile
 torchaudio
+openai-whisper
