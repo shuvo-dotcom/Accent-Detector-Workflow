@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 import matplotlib.pyplot as plt
 import numpy as np
+from moviepy import *
 from speechbrain.pretrained import SpeakerRecognition
 import torch
 import torchaudio
@@ -11,20 +12,36 @@ torchaudio.set_audio_backend("soundfile")
 
 st.set_page_config(page_title="Accent Detector", layout="centered")
 st.title("🧠 Accent Detector")
-st.caption("Upload a WAV file and detect the accent by comparing with known references.")
+st.caption("Upload a WAV or MP4 file and detect the accent by comparing with known references.")
+
+# Setup folders
 audio_dir = Path("user_inputs")
 ref_dir = Path("ref_accents")
 audio_dir.mkdir(exist_ok=True)
 ref_dir.mkdir(exist_ok=True)
 
-# File upload
-uploaded_file = st.file_uploader("🎙️ Upload WAV File", type=["wav"], help="Limit 200MB per file • WAV format only")
+# Upload
+uploaded_file = st.file_uploader("🎙️ Upload Audio/Video File", type=["wav", "mp4"], help="Max 200MB • WAV or MP4")
+
+# Extract audio if MP4
+def extract_audio_from_video(video_path, output_audio_path):
+    clip = VideoFileClip(str(video_path))
+    clip.audio.write_audiofile(str(output_audio_path), codec='pcm_s16le')
+    clip.close()
 
 if uploaded_file:
-    st.audio(uploaded_file, format='audio/wav')
+    st.audio(uploaded_file, format="audio/wav")
     user_path = audio_dir / uploaded_file.name
     with open(user_path, "wb") as f:
         f.write(uploaded_file.read())
+
+    # Convert MP4 to WAV if needed
+    if uploaded_file.name.endswith(".mp4"):
+        st.info("🎞️ Extracting audio from MP4...")
+        audio_path = user_path.with_suffix(".wav")
+        extract_audio_from_video(user_path, audio_path)
+    else:
+        audio_path = user_path
 
     st.info("🔍 Scanning for reference accents...")
     ref_files = list(ref_dir.glob("*.wav"))
@@ -46,7 +63,7 @@ if uploaded_file:
                 try:
                     score, _ = classifier.verify_files(
                         str(ref_file),
-                        str(user_path)
+                        str(audio_path)
                     )
                     scores[label] = score
                 except Exception as e:
@@ -67,6 +84,7 @@ if uploaded_file:
             st.json(printable_scores)
             st.success(f"🎯 **Predicted Accent:** `{predicted.capitalize()}`")
             st.markdown(f"**Confidence Score:** `{predicted_score:.2f}`")
+
             labels = list(printable_scores.keys())
             values = list(printable_scores.values())
             fig, ax = plt.subplots()
@@ -75,4 +93,8 @@ if uploaded_file:
             ax.set_ylabel("Confidence Score")
             ax.set_ylim(0, 1)
             st.pyplot(fig)
-        user_path.unlink()
+
+    # Cleanup
+    user_path.unlink(missing_ok=True)
+    if audio_path != user_path and audio_path.exists():
+        audio_path.unlink()
