@@ -19,3 +19,4 @@ How It Works
 4. Simultaneously, Whisper transcribes the audio and displays the transcript.
 
 Examples
+https://github.com/shuvo-dotcom/Accent-Detector-Workflow/blob/main/Screenshot%202025-06-20%20at%209.45.11%E2%80%AFPM.png
