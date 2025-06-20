@@ -5,9 +5,3 @@ torchaudio
 matplotlib
 ffmpeg
 numpy
-pandas
-scipy
-scikit-learn
-torch
-torchvision
-torchtext
