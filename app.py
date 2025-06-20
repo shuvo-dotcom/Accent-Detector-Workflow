@@ -3,7 +3,7 @@ from pathlib import Path
 from pydub import AudioSegment
 from speechbrain.pretrained import SpeakerRecognition
 
-# Paths
+# Set up directory paths
 BASE_DIR = Path(__file__).resolve().parent
 REF_DIR = BASE_DIR / "ref_accents"
 UPLOAD_DIR = BASE_DIR / "user_inputs"
@@ -11,42 +11,51 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Load model
 st.title("🗣️ Accent Detection with SpeechBrain")
+
 classifier = SpeakerRecognition.from_hparams(
     source="speechbrain/spkrec-ecapa-voxceleb",
     savedir=BASE_DIR / "pretrained_models/spkrec-ecapa-voxceleb"
 )
 
-# Upload
+# Upload user audio
 uploaded_file = st.file_uploader("Upload your `.wav` file", type=["wav"])
 if uploaded_file:
     user_path = UPLOAD_DIR / uploaded_file.name
     with open(user_path, "wb") as f:
         f.write(uploaded_file.read())
 
-    # Standardize uploaded audio
-    st.audio(str(user_path), format="audio/wav")
+    # Normalize audio to 16kHz mono
     audio = AudioSegment.from_file(user_path)
     audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
     audio.export(user_path, format="wav")
 
-    # Compare
-    st.info("🔍 Comparing with reference accents...")
-    scores = {}
-    for ref_file in sorted(REF_DIR.glob("*.wav")):
-        accent = ref_file.stem
-        try:
-            ref_path = ref_file.resolve()
-            user_file = user_path.resolve()
-            score, _ = classifier.verify_files(str(ref_path), str(user_file))
-            scores[accent] = float(score)
-        except Exception as e:
-            scores[accent] = 0.0
-            st.error(f"❌ Error comparing to {accent}: {e}")
+    st.audio(str(user_path), format="audio/wav")
 
+    # Debug: list reference files
+    st.info("🔍 Looking for reference accents...")
+    found_refs = list(REF_DIR.glob("*.wav"))
+    if not found_refs:
+        st.error("No reference `.wav` files found in `ref_accents/` folder.")
+    else:
+        st.success(f"Found {len(found_refs)} reference file(s): {[f.name for f in found_refs]}")
 
-    if scores:
+        # Compare with references
+        scores = {}
+        for ref_file in found_refs:
+            accent = ref_file.stem
+            try:
+                score, _ = classifier.verify_files(
+                    str(ref_file.resolve()),
+                    str(user_path.resolve())
+                )
+                scores[accent] = float(score)
+            except Exception as e:
+                scores[accent] = 0.0
+                st.error(f"❌ Error comparing to {accent}: {e}")
+
+        # Output result
         st.subheader("📊 Confidence Scores")
-        st.write(scores)
+        st.json(scores)
 
         best_accent = max(scores, key=scores.get)
         confidence = scores[best_accent]
