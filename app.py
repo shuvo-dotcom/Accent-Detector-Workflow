@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from speechbrain.pretrained import SpeakerRecognition  # updated from deprecated 'pretrained'
 import torch
+import torchaudio
+torchaudio.set_audio_backend("soundfile")
 
 st.set_page_config(page_title="Accent Detector", layout="centered")
 st.title("🧠 Accent Detector")
@@ -49,7 +51,10 @@ if uploaded_file:
         for ref_file in ref_files:
             label = ref_file.stem.lower()
             try:
-                score, _ = classifier.verify_files(str(ref_file.resolve()), str(user_path.resolve()))
+                score, _ = classifier.verify_files(
+                    str(ref_file),
+                    str(user_path)
+                )
                 scores[label] = score
             except Exception as e:
                 scores[label] = 0

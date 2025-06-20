@@ -8,3 +8,5 @@ langdetect==1.0.9
 moviepy
 matplotlib
 torchvision
+soundfile
+torchaudio
