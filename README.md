@@ -18,7 +18,7 @@ How It Works
 3. The accent with the highest score is predicted.
 4. Simultaneously, Whisper transcribes the audio and displays the transcript.
 
-Hosted
+Hosted @
 https://accent-detector-workflow.streamlit.app/
 
 Examples
