@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import matplotlib.pyplot as plt
 import numpy as np
-from speechbrain.inference import SpeakerRecognition  # updated from deprecated 'pretrained'
+from speechbrain.pretrained import SpeakerRecognition  # updated from deprecated 'pretrained'
 import torch
 
 st.set_page_config(page_title="Accent Detector", layout="centered")
