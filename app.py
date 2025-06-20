@@ -35,13 +35,14 @@ if uploaded_file:
     for ref_file in sorted(REF_DIR.glob("*.wav")):
         accent = ref_file.stem
         try:
-            score, _ = classifier.verify_files(
-                str(ref_file.resolve()), str(user_path.resolve())
-            )
+            ref_path = ref_file.resolve()
+            user_file = user_path.resolve()
+            score, _ = classifier.verify_files(str(ref_path), str(user_file))
             scores[accent] = float(score)
         except Exception as e:
             scores[accent] = 0.0
-            st.warning(f"❌ Error comparing to {accent}: {e}")
+            st.error(f"❌ Error comparing to {accent}: {e}")
+
 
     if scores:
         st.subheader("📊 Confidence Scores")
