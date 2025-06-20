@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import matplotlib.pyplot as plt
 import numpy as np
-from speechbrain.pretrained import SpeakerRecognition  # updated from deprecated 'pretrained'
+from speechbrain.pretrained import SpeakerRecognition
 import torch
 import torchaudio
 torchaudio.set_audio_backend("soundfile")
@@ -12,12 +12,8 @@ torchaudio.set_audio_backend("soundfile")
 st.set_page_config(page_title="Accent Detector", layout="centered")
 st.title("🧠 Accent Detector")
 st.caption("Upload a WAV file and detect the accent by comparing with known references.")
-
-# Paths
 audio_dir = Path("user_inputs")
 ref_dir = Path("ref_accents")
-
-# Ensure folders exist
 audio_dir.mkdir(exist_ok=True)
 ref_dir.mkdir(exist_ok=True)
 
@@ -38,15 +34,12 @@ if uploaded_file:
     else:
         st.success(f"✅ Found {len(ref_files)} reference file(s): {[f.name for f in ref_files]}")
 
-        # 🎬 Main spinner section
         with st.spinner("⏳ Please wait a few moments... We're analyzing your accent. 🚀"):
-            # Load model
             classifier = SpeakerRecognition.from_hparams(
                 source="speechbrain/spkrec-ecapa-voxceleb",
                 savedir="pretrained_models/spkrec"
             )
 
-            # Compare and score
             scores = {}
             for ref_file in ref_files:
                 label = ref_file.stem.lower()
@@ -60,25 +53,20 @@ if uploaded_file:
                     scores[label] = 0
                     st.error(f"❌ Error comparing to {label}: {e}")
 
-            # Sort and extract top result
             sorted_scores = dict(sorted(scores.items(), key=lambda x: x[1], reverse=True))
             predicted = next(iter(sorted_scores))
             predicted_score = sorted_scores[predicted]
             if isinstance(predicted_score, torch.Tensor):
                 predicted_score = predicted_score.item()
 
-            # Show scores
             st.subheader("📊 Confidence Scores")
             printable_scores = {
                 k: float(v.item()) if isinstance(v, torch.Tensor) else float(v)
                 for k, v in sorted_scores.items()
             }
             st.json(printable_scores)
-
             st.success(f"🎯 **Predicted Accent:** `{predicted.capitalize()}`")
             st.markdown(f"**Confidence Score:** `{predicted_score:.2f}`")
-
-            # Plot bar chart
             labels = list(printable_scores.keys())
             values = list(printable_scores.values())
             fig, ax = plt.subplots()
@@ -87,6 +75,4 @@ if uploaded_file:
             ax.set_ylabel("Confidence Score")
             ax.set_ylim(0, 1)
             st.pyplot(fig)
-
-        # Optional: remove uploaded file
         user_path.unlink()
