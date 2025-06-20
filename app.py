@@ -1,66 +1,50 @@
 import streamlit as st
-import tempfile
 import os
-from moviepy import *
+from pathlib import Path
+import torchaudio
 from speechbrain.pretrained import SpeakerRecognition
-import matplotlib.pyplot as plt
-st.set_page_config(page_title="🎙️ English Accent Classifier", layout="centered")
-st.title("🗣️ English Accent Detection (Open-Source)")
-st.markdown("Upload an `.mp4` video and detect if the speaker has a **British**, **American**, or **Australian** English accent.")
-uploaded_file = st.file_uploader("🎬 Upload your video file (max 20MB)", type=["mp4"])
-MAX_SIZE_MB = 20
+
+# Setup paths
+BASE_DIR = Path(__file__).resolve().parent
+REF_DIR = BASE_DIR / "ref_accents"
+UPLOAD_DIR = BASE_DIR / "user_inputs"
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Load the SpeechBrain model
+st.title("🗣️ Accent Detection with SpeechBrain")
+
+st.markdown("Upload a `.wav` file. It will be compared against reference accents.")
+classifier = SpeakerRecognition.from_hparams(
+    source="speechbrain/spkrec-ecapa-voxceleb",
+    savedir=BASE_DIR / "pretrained_models/spkrec-ecapa-voxceleb"
+)
+
+# Upload audio
+uploaded_file = st.file_uploader("Upload your voice sample (.wav only)", type=["wav"])
+
 if uploaded_file:
-    uploaded_file.seek(0, os.SEEK_END)
-    file_size_mb = uploaded_file.tell() / (1024 * 1024)
-    uploaded_file.seek(0)
+    user_path = UPLOAD_DIR / uploaded_file.name
+    with open(user_path, "wb") as f:
+        f.write(uploaded_file.read())
 
-    if file_size_mb > MAX_SIZE_MB:
-        st.error("⚠️ File is too large! Please upload a file smaller than 20MB.")
-        st.stop()
+    st.audio(str(user_path), format="audio/wav")
 
-if uploaded_file:
-    st.success("✅ File uploaded successfully.")
-    if st.button("🔍 Process Video"):
-        with st.spinner("⏳ Extracting audio and analyzing accent..."):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
-                tmp_vid.write(uploaded_file.read())
-                video_path = tmp_vid.name
-            audio_path = video_path.replace(".mp4", ".wav")
-            try:
-                clip = VideoFileClip(video_path)
-                clip.audio.write_audiofile(audio_path, codec='pcm_s16le')
-            except Exception as e:
-                st.error(f"Failed to extract audio: {e}")
-                st.stop()
-            classifier = SpeakerRecognition.from_hparams(
-                source="speechbrain/spkrec-ecapa-voxceleb",
-                savedir="tmp/speechbrain"
-            )
-            reference_accents = {
-                "British": "ref_accents/british.wav",
-                "American": "ref_accents/american.wav",
-                "Australian": "ref_accents/australian.wav"
-            }
-            scores = {}
-            for accent, ref_path in reference_accents.items():
-                try:
-                    score = classifier.verify_files(audio_path, ref_path)[0].item()
-                    scores[accent] = score
-                except Exception as e:
-                    scores[accent] = 0.0
-            predicted = max(scores.items(), key=lambda x: x[1])
+    # Verify against each reference file
+    scores = {}
+    for ref_file in sorted(REF_DIR.glob("*.wav")):
+        accent = ref_file.stem
+        try:
+            score, _ = classifier.verify_files(str(ref_file), str(user_path))
+            scores[accent] = float(score)
+        except Exception as e:
+            scores[accent] = 0.0
+            st.warning(f"Error comparing to {accent}: {e}")
 
-        st.success("✅ Accent detected!")
-        st.markdown(f"### 🎯 **Predicted Accent:** `{predicted[0]}`")
-        st.markdown(f"**Confidence Score:** `{predicted[1]:.2f}`")
-        st.markdown("### 📊 Confidence Scores")
+    if scores:
+        st.subheader("📊 Confidence Scores")
+        st.write(scores)
 
-        fig, ax = plt.subplots()
-        ax.bar(scores.keys(), scores.values(), color="skyblue")
-        ax.set_ylabel("Score")
-        ax.set_ylim([0, 1])
-        st.pyplot(fig)
-
-        os.remove(video_path)
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
+        best_accent = max(scores, key=scores.get)
+        confidence = scores[best_accent]
+        st.success(f"🎯 **Predicted Accent:** `{best_accent.capitalize()}`")
+        st.markdown(f"**Confidence Score:** `{confidence:.2f}`")
