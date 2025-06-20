@@ -1,7 +1,7 @@
-streamlit
-moviepy
-speechbrain
-torchaudio
-matplotlib
-ffmpeg
-numpy
+streamlit==1.35.0
+speechbrain==0.5.16
+torch==2.2.2
+torchaudio==2.2.2
+pydub==0.25.1
+scikit-learn==1.4.2
+langdetect==1.0.9
