@@ -4,10 +4,6 @@ import os
 from moviepy import *
 from speechbrain.pretrained import SpeakerRecognition
 import matplotlib.pyplot as plt
-
-import os
-os.environ["HOME"] = "/tmp"
-os.environ["MPLCONFIGDIR"] = "/tmp/mpl_config"
 st.set_page_config(page_title="🎙️ English Accent Classifier", layout="centered")
 st.title("🗣️ English Accent Detection (Open-Source)")
 st.markdown("Upload an `.mp4` video and detect if the speaker has a **British**, **American**, or **Australian** English accent.")
